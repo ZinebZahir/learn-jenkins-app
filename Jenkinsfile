@@ -11,13 +11,11 @@ pipeline {
             agent {
                 docker {
                     image 'node:18-alpine'
-                    args '-v /C/ProgramData/Jenkins/.jenkins/workspace/CI_pipeline:/workspace'
                     reuseNode true
                 }
             }
             steps {
                 sh '''
-                    cd /workspace
                     ls -la
                     node --version
                     npm --version
@@ -28,47 +26,42 @@ pipeline {
             }
         }
 
+        
+
         stage('Test') {
             agent {
                 docker {
                     image 'node:18-alpine'
-                    args '-v /C/ProgramData/Jenkins/.jenkins/workspace/CI_pipeline:/workspace'
                     reuseNode true
                 }
             }
             steps {
                 sh '''
-                    cd /workspace
                     test -f build/index.html
                     npm test
                 '''
             }
             post {
                 always {
-                    junit '/workspace/src/tests-results/Junit.xml'
+                    junit 'src/tests-results/Junit.xml'
                 }
             }
         }
 
         stage('Deploy') {
-    agent {
-        docker {
-            image 'node:18-alpine'
-            args '-v /C/ProgramData/Jenkins/.jenkins/workspace/CI_pipeline:/workspace'
-            reuseNode true
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                    npm install netlify-cli
+                    node_modules/.bin/netlify --version
+                    node_modules/.bin/netlify deploy --prod --dir=build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
+                '''
+            }
         }
-    }
-    steps {
-        withCredentials([string(credentialsId: 'netlify-token-id', variable: 'NETLIFY_AUTH_TOKEN')]) {
-            sh '''
-                cd /workspace
-                npm install netlify-cli
-                node_modules/.bin/netlify --version
-                node_modules/.bin/netlify deploy --prod --dir=build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
-            '''
-        }
-    }
-}
-  
     }
 }
