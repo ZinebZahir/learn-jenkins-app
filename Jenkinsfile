@@ -51,21 +51,24 @@ pipeline {
         }
 
         stage('Deploy') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    args '-v /C/ProgramData/Jenkins/.jenkins/workspace/CI_pipeline:/workspace'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh '''
-                    cd /workspace
-                    npm install netlify-cli
-                    node_modules/.bin/netlify --version
-                    node_modules/.bin/netlify deploy --prod --dir=build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
-                '''
-            }
+    agent {
+        docker {
+            image 'node:18-alpine'
+            args '-v /C/ProgramData/Jenkins/.jenkins/workspace/CI_pipeline:/workspace'
+            reuseNode true
         }
+    }
+    steps {
+        withCredentials([string(credentialsId: 'netlify-token-id', variable: 'NETLIFY_AUTH_TOKEN')]) {
+            sh '''
+                cd /workspace
+                npm install netlify-cli
+                node_modules/.bin/netlify --version
+                node_modules/.bin/netlify deploy --prod --dir=build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
+            '''
+        }
+    }
+}
+  
     }
 }
