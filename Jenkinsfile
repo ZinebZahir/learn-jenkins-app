@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        NETLIFY_AUTH_TOKEN = credentials('netlify-token-id')
-        NETLIFY_SITE_ID = '1a9896b7-25a0-482f-b358-5b99b31d5851'
+        NETLIFY_AUTH_TOKEN = credentials('netlify-token-id') // Jenkins credential ID for Netlify token
+        NETLIFY_SITE_ID = '1a9896b7-25a0-482f-b358-5b99b31d5851' // Replace with your actual Netlify Site ID
     }
 
     stages {
@@ -11,21 +11,20 @@ pipeline {
             agent {
                 docker {
                     image 'node:18-alpine'
-                    args "-v ${WORKSPACE}:${WORKSPACE}" // Montre le répertoire de travail
+                    args '-v /C/ProgramData/Jenkins/.jenkins/workspace/CI_pipeline:/workspace'
                     reuseNode true
                 }
             }
             steps {
-                dir("${WORKSPACE}") {
-                    sh '''
-                        ls -la
-                        node --version
-                        npm --version
-                        npm ci
-                        npm run build
-                        ls -la
-                    '''
-                }
+                sh '''
+                    cd /workspace
+                    ls -la
+                    node --version
+                    npm --version
+                    npm ci
+                    npm run build
+                    ls -la
+                '''
             }
         }
 
@@ -33,21 +32,20 @@ pipeline {
             agent {
                 docker {
                     image 'node:18-alpine'
-                    args "-v ${WORKSPACE}:${WORKSPACE}" // Montre le répertoire de travail
+                    args '-v /C/ProgramData/Jenkins/.jenkins/workspace/CI_pipeline:/workspace'
                     reuseNode true
                 }
             }
             steps {
-                dir("${WORKSPACE}") {
-                    sh '''
-                        test -f build/index.html
-                        npm test
-                    '''
-                }
+                sh '''
+                    cd /workspace
+                    test -f build/index.html
+                    npm test
+                '''
             }
             post {
                 always {
-                    junit 'src/tests-results/Junit.xml'
+                    junit '/workspace/src/tests-results/Junit.xml'
                 }
             }
         }
@@ -56,18 +54,17 @@ pipeline {
             agent {
                 docker {
                     image 'node:18-alpine'
-                    args "-v ${WORKSPACE}:${WORKSPACE}" // Montre le répertoire de travail
+                    args '-v /C/ProgramData/Jenkins/.jenkins/workspace/CI_pipeline:/workspace'
                     reuseNode true
                 }
             }
             steps {
-                dir("${WORKSPACE}") {
-                    sh '''
-                        npm install netlify-cli
-                        node_modules/.bin/netlify --version
-                        node_modules/.bin/netlify deploy --prod --dir=build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
-                    '''
-                }
+                sh '''
+                    cd /workspace
+                    npm install netlify-cli
+                    node_modules/.bin/netlify --version
+                    node_modules/.bin/netlify deploy --prod --dir=build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
+                '''
             }
         }
     }
